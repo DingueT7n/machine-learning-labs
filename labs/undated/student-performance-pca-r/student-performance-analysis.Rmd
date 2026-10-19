@@ -1,0 +1,175 @@
+
+---
+title: "My R Markdown Document"
+output: html_document
+---
+##  Student score analysis
+### By GUERBOUZ MOHAMMED ALAA EDDINE
+
+#### Uplode the dataset 
+```{r}
+data <- read.csv("StudentPerformances.csv")
+head(data)
+
+```
+#### 1. Summary of the Dataset
+```{r}
+summary(data)
+str(data)
+
+
+```
+#### 2. Check and Deal with Data Problems
+#### Check for duplicated rows
+```{r}
+duplicated_rows <- data[duplicated(data), ]
+if (nrow(duplicated_rows) > 0) {
+  print("Duplicated rows found!")
+} else {
+  print("No duplicated rows found!")
+  data <- unique(data) # Remove duplicates
+}
+missing_values <- sum(is.na(data))
+if (missing_values > 0) {
+  print("Missing values found!")
+  # You can choose to remove missing values or impute them here
+  # Example: Remove rows with missing values
+  data <- na.omit(data)
+} else {
+  print("No missing values found!")
+}
+
+
+
+missing_values <- sum(is.na(data))
+
+if (missing_values > 0) {
+  print("Missing values found!")
+  
+  # Impute missing values
+  # Here, you can choose a method for imputation such as mean, median, or mode
+  
+  #  Impute missing values with the mean of each column
+  for (col in names(data)) {
+    if (is.numeric(data[[col]])) {
+      data[[col]][is.na(data[[col]])] <- mean(data[[col]], na.rm = TRUE)
+    }
+  }
+} else {
+  print("No missing values found!")
+}
+```
+#### Identify and deal with outliers
+#### For example, using boxplots or statistical methods like z-scores or IQR
+
+#### Data transformation if necessary (e.g., normalization or scaling of numeric variables)
+
+#### 3. Variables important for PCA
+#### Selecting numerical columns
+```{r}
+check_variance <- function(data) {
+  variable_names <- names(data)  # Get the names of all variables in the dataset
+  for (variable in variable_names) {
+    # Calculate variance for each variable
+    variance <- var(data[[variable]])  # Compute the variance using var() function
+    cat("Variance of", variable, ":", variance, "\n")  # Print the variable name and its variance
+  }
+}
+
+numeric_data <- data[, sapply(data, is.numeric)]  # Select only numeric variables
+variances <- apply(numeric_data, 2, var)  # Compute variances for each numeric variable
+print(variances)
+
+
+```
+#### 4. Variables important for PCA
+#### Selecting numerical columns
+```{r}
+pca_result <- prcomp(numeric_data, scale. = TRUE)  # scale. = TRUE scales the variables to have unit variance
+
+# Summary of PCA
+summary(pca_result)
+
+# Plotting PCA
+biplot(pca_result, scale = 0)
+
+
+```
+#### 5. Apply a PCA to study variables correlation and project individuals into 2D plan.
+```{r}
+
+
+plot(pca_result)
+
+pc1_loadings <- pca_result$rotation[, 1]  
+pc2_loadings <- pca_result$rotation[, 2]  
+
+prop_var <- pca_result$sdev^2 / sum(pca_result$sdev^2) 
+plot(prop_var)
+```
+#### 6. Are the part-time job, weekly self study and extracurricular activities effect on student performances ?
+```{r}
+
+# Example of a total score (sum of several exam scores)
+data$total_score <- rowSums(data[, c("math_score", "history_score", 
+                                     "physics_score", "chemistry_score", 
+                                     "biology_score", "english_score", 
+                                     "geography_score")], na.rm = TRUE)
+
+# Scatter plot to examine relationships
+library(ggplot2)
+
+ggplot(data, aes(x = weekly_self_study_hours, y = total_score)) +
+  geom_point() +
+  geom_smooth(method = "lm", col = "blue") +
+  labs(title = "Weekly Self-Study Hours vs. Total Score")
+
+# Boxplot to compare part-time job effect on performance
+ggplot(data, aes(x = as.factor(part_time_job), y = total_score)) +
+  geom_boxplot() +
+  labs(x = "Part-Time Job", y = "Total Score", title = "Part-Time Job Effect on Performance")
+
+# Boxplot to compare extracurricular activities' effect on performance
+ggplot(data, aes(x = as.factor(extracurricular_activities), y = total_score)) +
+  geom_boxplot() +
+  labs(x = "Extracurricular Activities", y = "Total Score", title = "Extracurricular Activities Effect on Performance")
+
+```
+#### 7. Apply a k-means clustering of individuals over the obtained plain.
+
+```{r}
+# Perform k-means clustering
+k <- 3  # Example: Choosing the number of clusters
+kmeans_result <- kmeans(pca_result$x[,1:2], centers = k)
+
+# Plot k-means clusters
+plot(pca_result$x[,1:2], col = kmeans_result$cluster, main = "k-means Clustering of Individuals")
+points(kmeans_result$centers, col = 1:k, pch = 8, cex = 2)
+
+
+```
+#### 8. Give the optimal K (number of clusters).
+```{r}
+
+
+pca_data <- data.frame(pca_result$x[, 1:2], cluster = as.factor(kmeans_result$cluster))
+
+
+ggplot(pca_data, aes(x = PC1, y = PC2, color = cluster)) +
+  geom_point() +
+  labs(title = "K-Means Clustering on PCA Plane",
+       x = "Principal Component 1",
+       y = "Principal Component 2") +
+  theme_minimal()
+
+
+```
+#### 9. Apply an HAC clustering of individuals with cut of 7. (Error)
+```{r}
+
+dist_matrix = dist(data_scaled, method = "euclidean")  
+hclust_result = hclust(dist_matrix, method = "complete")  
+
+
+
+```

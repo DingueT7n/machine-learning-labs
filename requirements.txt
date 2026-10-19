@@ -1,0 +1,11 @@
+jupyterlab
+notebook
+numpy
+pandas
+matplotlib
+seaborn
+scipy
+scikit-learn
+scikit-image
+statsmodels
+Pillow
